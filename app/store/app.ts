@@ -48,19 +48,19 @@ export type ModelConfig = ChatConfig["modelConfig"];
 export const ALL_MODELS = [
   {
     name: "gpt-4",
-    available: false,
+    available: true,
   },
   {
     name: "gpt-4-0314",
-    available: false,
+    available: true,
   },
   {
     name: "gpt-4-32k",
-    available: false,
+    available: true,
   },
   {
     name: "gpt-4-32k-0314",
-    available: false,
+    available: true,
   },
   {
     name: "gpt-3.5-turbo",

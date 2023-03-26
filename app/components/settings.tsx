@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect } from "react";
 
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 
@@ -17,7 +17,6 @@ import {
   Theme,
   ALL_MODELS,
   useUpdateStore,
-  useAccessStore,
 } from "../store";
 import { Avatar } from "./home";
 
@@ -39,7 +38,7 @@ function SettingItem(props: {
           <div className={styles["settings-sub-title"]}>{props.subTitle}</div>
         )}
       </div>
-      {props.children}
+      <div>{props.children}</div>
     </ListItem>
   );
 }
@@ -71,12 +70,6 @@ export function Settings(props: { closeSettings: () => void }) {
   useEffect(() => {
     checkUpdate();
   }, []);
-
-  const accessStore = useAccessStore();
-  const enabledAccessControl = useMemo(
-    () => accessStore.enabledAccessControl(),
-    []
-  );
 
   return (
     <>
@@ -239,24 +232,6 @@ export function Settings(props: { closeSettings: () => void }) {
           </div>
         </List>
         <List>
-          {enabledAccessControl ? (
-            <SettingItem
-              title={Locale.Settings.AccessCode.Title}
-              subTitle={Locale.Settings.AccessCode.SubTitle}
-            >
-              <input
-                value={accessStore.accessCode}
-                type="text"
-                placeholder={Locale.Settings.AccessCode.Placeholder}
-                onChange={(e) => {
-                  accessStore.updateCode(e.currentTarget.value);
-                }}
-              ></input>
-            </SettingItem>
-          ) : (
-            <></>
-          )}
-
           <SettingItem
             title={Locale.Settings.HistoryCount.Title}
             subTitle={Locale.Settings.HistoryCount.SubTitle}

@@ -86,6 +86,8 @@ export function SideBar(props: { className?: string }) {
   const { onDragMouseDown, shouldNarrow } = useDragSideBar();
   const navigate = useNavigate();
 
+  const config = useAppConfig();
+
   return (
     <div
       className={`${styles.sidebar} ${props.className} ${
@@ -105,14 +107,14 @@ export function SideBar(props: { className?: string }) {
       <div className={styles["sidebar-header-bar"]}>
         <IconButton
           icon={<MaskIcon />}
-          text="Mask"
+          text={shouldNarrow ? undefined : Locale.Mask.Name}
           className={styles["sidebar-bar-button"]}
-          onClick={() => navigate(Path.Masks)}
+          onClick={() => navigate(Path.NewChat, { state: { fromHome: true } })}
           shadow
         />
         <IconButton
           icon={<PluginIcon />}
-          text="Plugins"
+          text={shouldNarrow ? undefined : Locale.Plugin.Name}
           className={styles["sidebar-bar-button"]}
           onClick={() => showToast(Locale.WIP)}
           shadow
@@ -149,7 +151,11 @@ export function SideBar(props: { className?: string }) {
             icon={<AddIcon />}
             text={shouldNarrow ? undefined : Locale.Home.NewChat}
             onClick={() => {
-              navigate(Path.NewChat);
+              if (config.dontShowMaskSplashScreen) {
+                chatStore.newSession();
+              } else {
+                navigate(Path.NewChat);
+              }
             }}
             shadow
           />

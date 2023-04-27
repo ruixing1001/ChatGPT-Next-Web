@@ -1,4 +1,6 @@
 import DeleteIcon from "../icons/delete.svg";
+import BotIcon from "../icons/bot.svg";
+
 import styles from "./home.module.scss";
 import {
   DragDropContext,
@@ -35,9 +37,19 @@ export function ChatItem(props: {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          title={`${props.title}\n${Locale.ChatItem.ChatItemCount(
+            props.count,
+          )}`}
         >
           {props.narrow ? (
-            <div className={styles["chat-item-narrow"]}>{props.count}</div>
+            <div className={styles["chat-item-narrow"]}>
+              <div className={styles["chat-item-avatar"] + " no-dark"}>
+                <BotIcon></BotIcon>
+              </div>
+              <div className={styles["chat-item-narrow-count"]}>
+                {props.count}
+              </div>
+            </div>
           ) : (
             <>
               <div className={styles["chat-item-title"]}>{props.title}</div>
@@ -45,7 +57,9 @@ export function ChatItem(props: {
                 <div className={styles["chat-item-count"]}>
                   {Locale.ChatItem.ChatItemCount(props.count)}
                 </div>
-                <div className={styles["chat-item-date"]}>{props.time}</div>
+                <div className={styles["chat-item-date"]}>
+                  {new Date(props.time).toLocaleString()}
+                </div>
               </div>
             </>
           )}
@@ -99,7 +113,7 @@ export function ChatList(props: { narrow?: boolean }) {
             {sessions.map((item, i) => (
               <ChatItem
                 title={item.topic}
-                time={item.lastUpdate}
+                time={new Date(item.lastUpdate).toLocaleString()}
                 count={item.messages.length}
                 key={item.id}
                 id={item.id}

@@ -41,7 +41,9 @@ export async function handle(
 async function request(req: NextRequest) {
   const controller = new AbortController();
 
+  // alibaba use base url or just remove the path
   let path = `${req.nextUrl.pathname}`.replaceAll(ApiPath.ChatGLM, "");
+
   let baseUrl = serverConfig.chatglmUrl || CHATGLM_BASE_URL;
 
   if (!baseUrl.startsWith("http")) {
@@ -52,8 +54,8 @@ async function request(req: NextRequest) {
     baseUrl = baseUrl.slice(0, -1);
   }
 
-  console.log("[GLM Proxy] path:", path);
-  console.log("[GLM Base Url]", baseUrl);
+  console.log("[Proxy] ", path);
+  console.log("[Base Url]", baseUrl);
 
   const timeoutId = setTimeout(
     () => {
@@ -63,66 +65,64 @@ async function request(req: NextRequest) {
   );
 
   const fetchUrl = `${baseUrl}${path}`;
-  console.log("[GLM Fetch Url]", fetchUrl);
-
-  // Clone and process request body
-  let body = req.body;
-  let contentType = req.headers.get("Content-Type") || "application/json";
-  let bodyText = "";
-
-  if (body) {
-    try {
-      bodyText = await req.text();
-      const jsonBody = JSON.parse(bodyText);
-      
-      // Log the request body for debugging
-      console.log("[GLM Request Body]", JSON.stringify(jsonBody, null, 2));
-      
-      body = bodyText;
-    } catch (e) {
-      console.error("[GLM] Failed to process request body:", e);
-      return NextResponse.json(
-        { error: true, message: "Invalid request body" },
-        { status: 400 },
-      );
-    }
-  }
-
+  console.log("[Fetch Url] ", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {
-      "Content-Type": contentType,
+      "Content-Type": "application/json",
       Authorization: req.headers.get("Authorization") ?? "",
     },
     method: req.method,
-    body,
+    body: req.body,
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
     signal: controller.signal,
   };
 
-  try {
-    const response = await fetch(fetchUrl, fetchOptions);
-    const responseHeaders = new Headers(response.headers);
-    responseHeaders.set("content-type", response.headers.get("content-type") ?? "application/json");
-    
-    if (!response.ok) {
-      const error = await response.json();
-      console.error("[GLM API Error]", error);
-      return NextResponse.json(error, { status: response.status });
-    }
+  // #1815 try to refuse some request to some models
+  if (serverConfig.customModels && req.body) {
+    try {
+      const clonedBody = await req.text();
+      fetchOptions.body = clonedBody;
 
-    return new NextResponse(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: responseHeaders,
+      const jsonBody = JSON.parse(clonedBody) as { model?: string };
+
+      // not undefined and is false
+      if (
+        isModelAvailableInServer(
+          serverConfig.customModels,
+          jsonBody?.model as string,
+          ServiceProvider.ChatGLM as string,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error: true,
+            message: `you are not allowed to use ${jsonBody?.model} model`,
+          },
+          {
+            status: 403,
+          },
+        );
+      }
+    } catch (e) {
+      console.error(`[GLM] filter`, e);
+    }
+  }
+  try {
+    const res = await fetch(fetchUrl, fetchOptions);
+
+    // to prevent browser prompt for credentials
+    const newHeaders = new Headers(res.headers);
+    newHeaders.delete("www-authenticate");
+    // to disable nginx buffering
+    newHeaders.set("X-Accel-Buffering", "no");
+
+    return new Response(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: newHeaders,
     });
-  } catch (e) {
-    console.error("[GLM Fetch Error]", e);
-    return NextResponse.json(
-      { error: true, message: "Failed to fetch from GLM API" },
-      { status: 500 },
-    );
   } finally {
     clearTimeout(timeoutId);
   }

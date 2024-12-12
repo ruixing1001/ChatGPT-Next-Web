@@ -260,10 +260,12 @@ export function isVisionModel(model: string) {
     "gpt-4o",
     "claude-3",
     "gemini-1.5",
+    "gemini-2.0",
     "gemini-exp",
     "learnlm",
     "qwen-vl",
     "qwen2-vl",
+    "glm-4v",
   ];
   const isGpt4Turbo =
     model.includes("gpt-4-turbo") && !model.includes("preview");

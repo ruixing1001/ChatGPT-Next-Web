@@ -405,6 +405,7 @@ const chatglmModels = [
   "glm-4-long",
   "glm-4-flashx",
   "glm-4-flash",
+  "glm-4v-flash",
 ];
 
 let seq = 1000; // 内置的模型序号生成器从1000开始

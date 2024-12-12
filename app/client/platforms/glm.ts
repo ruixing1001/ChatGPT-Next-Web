@@ -74,12 +74,24 @@ export class ChatGLMApi implements LLMApi {
       // Add images if present
       if (isVisionModel(options.config.model) && images.length > 0) {
         content.push(
-          ...images.map((image) => ({
-            type: "image_url",
-            image_url: {
-              url: image
+          ...images.map((image) => {
+            // Handle base64 image data
+            let imageUrl = image;
+            if (image.startsWith('data:')) {
+              // Image is already in base64 format, use it directly
+              imageUrl = image.split(',')[1];
+            } else if (!image.startsWith('http')) {
+              // If it's not a URL and not already in base64 format, assume it's raw base64
+              imageUrl = image;
             }
-          }))
+            
+            return {
+              type: "image_url",
+              image_url: {
+                url: imageUrl
+              }
+            };
+          })
         );
       }
       

@@ -77,41 +77,37 @@ export class ChatGLMApi implements LLMApi {
         content.push(
           ...images.map((image) => {
             try {
-              // Handle base64 image data
               let imageUrl = image;
-              console.log("[GLM Image] Original image data type:", 
-                image.startsWith('data:') ? 'data URI' : 
-                image.startsWith('http') ? 'URL' : 'base64');
               
+              // Skip cache URLs and handle only base64 data
+              if (image.includes('/api/cache/')) {
+                throw new Error("Cache URLs are not supported. Please upload images directly.");
+              }
+
               if (image.startsWith('data:')) {
-                // Extract base64 data and mime type from data URI
+                // Extract base64 data from data URI
                 const matches = image.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
                 if (matches && matches.length === 3) {
                   const [_, mimeType, base64Data] = matches;
-                  imageUrl = base64Data;
-                  console.log("[GLM Image] Extracted base64 data with mime type:", mimeType);
+                  // Use the raw base64 data
+                  imageUrl = base64Data.replace(/[\n\r\s]/g, '');
+                  console.log("[GLM Image] Using base64 data from data URI");
                 } else {
                   throw new Error("Invalid data URI format");
                 }
               } else if (!image.startsWith('http')) {
-                // For raw base64 data, validate it
+                // For raw base64 data, validate and clean it
                 try {
                   atob(image); // Validate base64
-                  imageUrl = image;
-                  console.log("[GLM Image] Valid raw base64 data");
+                  imageUrl = image.replace(/[\n\r\s]/g, '');
+                  console.log("[GLM Image] Using raw base64 data");
                 } catch (e) {
-                  console.error("[GLM Image] Invalid base64 data");
                   throw new Error("Invalid base64 data");
                 }
+              } else {
+                throw new Error("Only base64 image data is supported");
               }
 
-              // For GLM API, we need to ensure the base64 string doesn't contain any whitespace
-              if (!imageUrl.startsWith('http')) {
-                imageUrl = imageUrl.replace(/[\n\r\s]/g, '');
-              }
-
-              console.log("[GLM Image] Final URL length:", imageUrl.length);
-              
               return {
                 type: "image_url",
                 image_url: {

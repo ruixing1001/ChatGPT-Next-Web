@@ -21,7 +21,7 @@ import {
   SpeechOptions,
 } from "../api";
 import { getClientConfig } from "@/app/config/client";
-import { getMessageTextContent } from "@/app/utils";
+import { getMessageTextContent, getMessageImages, isVisionModel } from "@/app/utils";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
 
@@ -66,8 +66,35 @@ export class ChatGLMApi implements LLMApi {
   async chat(options: ChatOptions) {
     const messages: ChatOptions["messages"] = [];
     for (const v of options.messages) {
-      const content = getMessageTextContent(v);
-      messages.push({ role: v.role, content });
+      const images = getMessageImages(v);
+      const textContent = getMessageTextContent(v);
+      
+      const content: any[] = [];
+      
+      // Add images if present
+      if (isVisionModel(options.config.model) && images.length > 0) {
+        content.push(
+          ...images.map((image) => ({
+            type: "image_url",
+            image_url: {
+              url: image
+            }
+          }))
+        );
+      }
+      
+      // Add text content if present
+      if (textContent) {
+        content.push({
+          type: "text",
+          text: textContent
+        });
+      }
+
+      messages.push({
+        role: v.role,
+        content: content.length > 0 ? content : textContent // Fall back to text-only format if no content
+      });
     }
 
     const modelConfig = {
